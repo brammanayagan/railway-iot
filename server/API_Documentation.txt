@@ -1,0 +1,178 @@
+# Railway IoT Backend API Documentation (MVP Auth Module)
+
+## Base URL
+
+http://localhost:5000/api
+
+---
+
+# 1. Register User
+
+## Endpoint
+
+POST /auth/register
+
+## Request Body
+
+```json
+{
+  "name": "Bramma",
+  "email": "bramma@gmail.com",
+  "password": "123456"
+}
+```
+
+## Success Response
+
+```json
+{
+  "success": true,
+  "token": "jwt_token_here",
+  "user": {
+    "_id": "685...",
+    "name": "Bramma",
+    "email": "bramma@gmail.com"
+  }
+}
+```
+
+## Error Response
+
+```json
+{
+  "message": "User already exists"
+}
+```
+
+---
+
+# 2. Login User
+
+## Endpoint
+
+POST /auth/login
+
+## Request Body
+
+```json
+{
+  "email": "bramma@gmail.com",
+  "password": "123456"
+}
+```
+
+## Success Response
+
+```json
+{
+  "success": true,
+  "token": "jwt_token_here",
+  "user": {
+    "_id": "685...",
+    "name": "Bramma",
+    "email": "bramma@gmail.com"
+  }
+}
+```
+
+## Error Response
+
+```json
+{
+  "message": "Invalid email or password"
+}
+```
+
+---
+
+# 3. Get Logged-in User
+
+## Endpoint
+
+GET /auth/user
+
+## Headers
+
+```http
+Authorization: Bearer jwt_token_here
+```
+
+## Success Response
+
+```json
+{
+  "_id": "685...",
+  "name": "Bramma",
+  "email": "bramma@gmail.com"
+}
+```
+
+## Error Response
+
+```json
+{
+  "message": "Not authorized, no token"
+}
+```
+
+or
+
+```json
+{
+  "message": "Token failed"
+}
+```
+
+---
+
+# Frontend Flow
+
+Register Screen
+↓
+POST /auth/register
+↓
+Receive JWT Token
+↓
+Store Token
+
+OR
+
+Login Screen
+↓
+POST /auth/login
+↓
+Receive JWT Token
+↓
+Store Token
+
+After Login
+↓
+GET /auth/user
+↓
+Authorization Header
+↓
+Receive Current User Data
+
+---
+
+# JWT Storage
+
+Store token locally using:
+
+AsyncStorage
+
+Example:
+
+Key: token
+
+Value: jwt_token_here
+
+---
+
+# Required Header For Protected APIs
+
+```http
+Authorization: Bearer jwt_token_here
+```
+
+Bearer is mandatory.
