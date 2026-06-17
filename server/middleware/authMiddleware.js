@@ -15,6 +15,11 @@ export const protect = async (req, res, next) => {
 
       req.user = await User.findById(decoded.id).select('-password');
 
+      if (req.user && !req.user.isVerified) {
+        res.status(401);
+        throw new Error('Please verify your email first to access this resource');
+      }
+
       next();
     } catch (error) {
       console.error(error);
