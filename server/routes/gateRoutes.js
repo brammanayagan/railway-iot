@@ -1,13 +1,24 @@
 import express from 'express';
-import { updateGateStatus, createGate } from '../controllers/gateController.js';
+import { 
+  updateGateStatus, 
+  createGate,
+  getGates,
+  getGateById,
+  updateGate,
+  deleteGate
+} from '../controllers/gateController.js';
 
 const router = express.Router();
 
-// Route to create a new gate (for testing purposes)
+// General CRUD
 router.post('/create', createGate);
+router.get('/all', getGates);
+router.get('/:id', getGateById);
+router.put('/:id', updateGate);
+router.delete('/:id', deleteGate);
 
-// Route to handle sensor updates
-router.put('/update-status', updateGateStatus);
+// Sensor specific
+router.put('/status/update', updateGateStatus); // updated path to avoid conflict with generic PUT
 
 export default router;
 

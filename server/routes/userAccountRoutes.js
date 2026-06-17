@@ -1,13 +1,19 @@
 import express from 'express';
-import { createUserAccount, getUserAccounts } from '../controllers/userAccountController.js';
+import { 
+  createUserAccount, 
+  getUserAccounts,
+  getUserAccountById,
+  updateUserAccount,
+  deleteUserAccount
+} from '../controllers/userAccountController.js';
 
 const router = express.Router();
 
-// Route to create a new user account
 router.post('/create', createUserAccount);
-
-// Route to get all user accounts
 router.get('/all', getUserAccounts);
+router.get('/:id', getUserAccountById);
+router.put('/:id', updateUserAccount);
+router.delete('/:id', deleteUserAccount);
 
 export default router;
 
