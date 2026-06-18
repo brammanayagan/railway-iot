@@ -1,184 +1,113 @@
 import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
-import OTP from '../models/OTP.js';
-import mailSender from '../utils/mailSender.js';
-import bcrypt from 'bcryptjs';
+import { getGoogleAuthURL, getTokens, getGoogleUser } from '../config/googleOAuth.js';
 
-// @desc    Auth user & get token
-// @route   POST /api/auth/login
+// @desc    Initiate Google OAuth Login
+// @route   GET /api/auth/google
 // @access  Public
-export const authUser = async (req, res, next) => {
-  try {
-    const { email, password } = req.body;
-
-    const user = await User.findOne({ email });
-
-    if (user && (await user.matchPassword(password))) {
-      if (!user.isVerified) {
-        res.status(401);
-        throw new Error('Please verify your email first');
-      }
-
-      res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        token: generateToken(user._id),
-      });
-    } else {
-      res.status(401);
-      throw new Error('Invalid email or password');
-    }
-  } catch (error) {
-    next(error);
-  }
+export const googleLogin = (req, res) => {
+  const url = getGoogleAuthURL();
+  res.redirect(url);
 };
 
-// @desc    Get user profile
-// @route   GET /api/auth/user
-// @access  Private
-export const getUserProfile = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user._id).select('-password');
-
-    if (user) {
-      res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-      });
-    } else {
-      res.status(404);
-      throw new Error('User not found');
-    }
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Register a new user
-// @route   POST /api/auth/register
+// @desc    Google OAuth Callback
+// @route   GET /api/auth/google/callback
 // @access  Public
-export const registerUser = async (req, res, next) => {
+export const googleCallback = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      res.status(400);
-      throw new Error('Please provide all fields');
+    const code = req.query.code;
+    if (!code) {
+      return res.status(400).json({ message: 'Authorization code not provided' });
     }
 
-    const userExists = await User.findOne({ email });
-
-    if (userExists) {
-      res.status(400);
-      throw new Error('User already exists');
-    }
-
-    const user = await User.create({
-      name,
-      email,
-      password,
+    // Exchange authorization code for tokens
+    const { id_token, access_token } = await getTokens({
+      code,
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      redirectUri: process.env.GOOGLE_CALLBACK_URL,
     });
 
-    if (user) {
-      res.status(201).json({
-        success: true,
-        message: 'User registered successfully. Please verify your email with an OTP.',
-        user: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-        }
-      });
-    } else {
-      res.status(400);
-      throw new Error('Invalid user data');
-    }
-  } catch (error) {
-    next(error);
-  }
-};
+    // Fetch user profile from Google
+    const googleUser = await getGoogleUser(id_token, access_token);
 
-// @desc    Send OTP to user's email
-// @route   POST /api/auth/send-otp
-// @access  Public
-export const sendOTP = async (req, res, next) => {
-  try {
-    const { email } = req.body;
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser && existingUser.isVerified) {
-      res.status(400);
-      throw new Error('User is already verified');
+    if (!googleUser.verified_email) {
+      return res.status(403).json({ message: 'Google account not verified' });
     }
 
-    // Generate 6-digit OTP using a cryptographically secure method
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Send email BEFORE saving to DB (so if email fails, we don't save a useless OTP)
-    const emailBody = `<h1>Verification Code</h1><p>Your code is: <b>${otp}</b></p>`;
-    await mailSender(email, "Verification Email", emailBody);
-
-    // Save OTP to database (the pre-save hook will hash it!)
-    await OTP.create({ email, otp });
-
-    res.status(200).json({ success: true, message: 'OTP sent successfully' });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Verify the OTP provided by the user
-// @route   POST /api/auth/verify-otp
-// @access  Public
-export const verifyOTP = async (req, res, next) => {
-  try {
-    const { email, otp } = req.body;
-
-    if (!email || !otp) {
-      res.status(400);
-      throw new Error('Email and OTP are required');
-    }
-
-    // Find the most recent OTP for the email
-    const response = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
-
-    if (response.length === 0) {
-      res.status(400);
-      throw new Error('The OTP is invalid or has expired');
-    }
-
-    // Compare the provided OTP with the hashed OTP in the DB
-    const isMatch = await bcrypt.compare(otp, response[0].otp);
-
-    if (!isMatch) {
-      res.status(400);
-      throw new Error('Invalid OTP');
-    }
-
-    // Mark user as verified
-    const user = await User.findOneAndUpdate({ email }, { isVerified: true }, { new: true });
+    // Check if user already exists
+    let user = await User.findOne({ email: googleUser.email });
 
     if (!user) {
-      res.status(404);
-      throw new Error('User not found');
+      // Create new user if doesn't exist
+      user = await User.create({
+        name: googleUser.name,
+        email: googleUser.email,
+        googleId: googleUser.id,
+        profilePicture: googleUser.picture,
+        isVerified: true,
+      });
+    } else if (!user.googleId) {
+      // If user exists but no googleId (e.g. registered with email/password previously), link the account
+      user.googleId = googleUser.id;
+      if (!user.profilePicture) {
+          user.profilePicture = googleUser.picture;
+      }
+      await user.save();
     }
 
-    // Delete the used OTP
-    await OTP.deleteMany({ email });
+    // Generate JWT token
+    const token = generateToken(user._id);
 
-    res.status(200).json({ 
-      success: true, 
-      message: 'Email verified successfully',
-      token: generateToken(user._id),
+    // Return user data and JWT token in response body
+    res.status(200).json({
+      message: 'Successfully logged in with Google',
+      token,
       user: {
         _id: user._id,
         name: user.name,
         email: user.email,
-      }
+        profilePicture: user.profilePicture,
+        role: user.role,
+        assignedGate: user.assignedGate,
+        isVerified: user.isVerified,
+      },
     });
+
   } catch (error) {
-    next(error);
+    console.error('Google Callback Error:', error);
+    res.status(500).json({ message: 'Authentication failed', error: error.message });
   }
+};
+
+// @desc    Get user profile
+// @route   GET /api/auth/profile
+// @access  Private
+export const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (user) {
+      res.json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        profilePicture: user.profilePicture,
+        role: user.role,
+        assignedGate: user.assignedGate,
+      });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Logout user
+// @route   POST /api/auth/logout
+// @access  Private
+export const logoutUser = (req, res) => {
+  // In JWT, logout is usually handled client-side by deleting the token.
+  // Optionally, you can blacklist the token on the server-side, but we return a success message here.
+  res.status(200).json({ message: 'Logged out successfully. Please remove token from client.' });
 };
