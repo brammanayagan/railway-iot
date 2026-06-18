@@ -14,7 +14,26 @@ const userSchema = mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: function() {
+        return this.provider === 'email';
+      },
+    },
+    googleId: {
+      type: String,
+      default: null,
+    },
+    profilePicture: {
+      type: String,
+      default: null,
+    },
+    provider: {
+      type: String,
+      enum: ['email', 'google'],
+      default: 'email',
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
     },
   },
   {
