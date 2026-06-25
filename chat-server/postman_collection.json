@@ -1,0 +1,43 @@
+{
+  "info": {
+    "name": "Railway IoT MVP",
+    "description": "Postman collection for Smart Railway Gate System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type","value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\"\n}"
+            },
+            "url": {"raw": "http://localhost:3000/api/auth/login","protocol": "http","host": ["localhost"],"port": "3000","path": ["api","auth","login"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "IoT Endpoints",
+      "item": [
+        {
+          "name": "Send Event Status (ESP32)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type","value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deviceCode\": \"ESP001\",\n  \"status\": \"OPEN\",\n  \"sensorType\": \"REED_SWITCH\",\n  \"source\": \"HTTP\",\n  \"eventTime\": \"2026-06-25T14:30:00Z\"\n}"
+            },
+            "url": {"raw": "http://localhost:3000/api/iot/status","protocol": "http","host": ["localhost"],"port": "3000","path": ["api","iot","status"]}
+          }
+        }
+      ]
+    }
+  ]
+}
