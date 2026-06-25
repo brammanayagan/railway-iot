@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
 
-export const authMiddleware = async (req, res, next) => {
+export const authMiddleware = (req, res, next) => {
   let token;
 
   if (
@@ -10,9 +9,16 @@ export const authMiddleware = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(' ')[1];
+      
+      // Verify JWT
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
 
-      req.user = await User.findById(decoded.id || decoded._id).select('-password');
+      // Attach strictly decoded info (saving DB lookup)
+      req.user = {
+        id: decoded.id,
+        role: decoded.role
+      };
+
       next();
     } catch (error) {
       return res.status(401).json({ success: false, message: 'Not authorized, token failed' });

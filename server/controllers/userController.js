@@ -10,8 +10,8 @@ const sendResponse = (res, statusCode, success, message, data = null, error = nu
 
 export const getProfile = async (req, res) => {
   try {
-    // Assuming user ID is passed in params or attached to req.user by auth middleware
-    const { id } = req.params;
+    // Extract authenticated user ID from JWT payload attached by authMiddleware
+    const id = req.user.id;
 
     const user = await User.findById(id).populate('favouriteGates');
     if (!user) {
@@ -26,7 +26,7 @@ export const getProfile = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.user.id;
     const { name, email, fcmToken } = req.body;
 
     const user = await User.findById(id);
@@ -48,7 +48,7 @@ export const updateProfile = async (req, res) => {
 
 export const updateFavouriteGates = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.user.id;
     const { gates } = req.body; // Array of gate ObjectIds
 
     if (!Array.isArray(gates)) {
@@ -73,7 +73,7 @@ export const updateFavouriteGates = async (req, res) => {
 
 export const getFavouriteGates = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.user.id;
 
     const user = await User.findById(id).populate('favouriteGates');
     if (!user) {
@@ -88,7 +88,7 @@ export const getFavouriteGates = async (req, res) => {
 
 export const enableNotifications = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.user.id;
 
     const user = await User.findByIdAndUpdate(id, { notificationEnabled: true }, { new: true });
     if (!user) {
@@ -103,7 +103,7 @@ export const enableNotifications = async (req, res) => {
 
 export const disableNotifications = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.user.id;
 
     const user = await User.findByIdAndUpdate(id, { notificationEnabled: false }, { new: true });
     if (!user) {

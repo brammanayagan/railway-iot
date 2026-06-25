@@ -32,7 +32,7 @@ export const createNotification = async (req, res) => {
 
 export const getUserNotifications = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
     
     const notifications = await Notification.find({ user: userId })
       .sort({ createdAt: -1 })
@@ -82,7 +82,7 @@ export const deleteNotification = async (req, res) => {
 
 export const getUnreadCount = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
 
     const count = await Notification.countDocuments({ user: userId, isRead: false });
 
