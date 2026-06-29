@@ -56,6 +56,8 @@ const seedDatabase = async () => {
           state: 'Tamil Nadu',
           isActive: true,
           currentStatus: 'UNKNOWN',
+          lastOpenedAt: null,
+          lastClosedAt: null,
         });
         console.log(`✅ Created Gate: ${gate.gateName}`);
       } else {

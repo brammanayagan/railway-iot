@@ -1,4 +1,4 @@
-﻿# Railway Gate Live Monitoring MVP - Enterprise API Documentation
+# Railway Gate Live Monitoring MVP - Enterprise API Documentation
 
 ## Cover
 
@@ -621,10 +621,16 @@ React Native App                  Express Backend                     MongoDB
   "data": {
     "_id": "...",
     "currentStatus": "CLOSED",
+    "lastOpenedAt": "2026-06-25T10:05:00Z",
+    "lastClosedAt": "2026-06-25T09:58:00Z",
     "lastStatusChangedAt": "2026-06-25T10:05:00Z"
   }
 }
 ```
+
+**Fields Explanation:**
+- `lastOpenedAt`: The exact timestamp when the gate was last recorded as OPEN.
+- `lastClosedAt`: The exact timestamp when the gate was last recorded as CLOSED.
 
 #### 4. Get Gate History
 **Purpose:** Fetch the timeline of when a gate opened and closed.

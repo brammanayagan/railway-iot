@@ -94,6 +94,16 @@ const railwayGateSchema = new mongoose.Schema(
     lastStatusChangedAt: {
       type: Date,
     },
+    // The exact timestamp when the gate was last opened
+    lastOpenedAt: {
+      type: Date,
+      default: null,
+    },
+    // The exact timestamp when the gate was last closed
+    lastClosedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true, // Automatically manages createdAt and updatedAt

@@ -113,7 +113,7 @@ export const getGateByCode = async (req, res) => {
 export const getCurrentStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const gate = await RailwayGate.findById(id).select('currentStatus lastStatusChangedAt currentDevice');
+    const gate = await RailwayGate.findById(id).select('currentStatus lastStatusChangedAt lastOpenedAt lastClosedAt currentDevice');
     
     if (!gate) {
       return sendResponse(res, 404, false, 'Gate not found');
@@ -210,12 +210,16 @@ export const updateCurrentStatus = async (req, res) => {
       return sendResponse(res, 400, false, 'Invalid status value');
     }
 
+    const updatePayload = { 
+      currentStatus: status,
+      lastStatusChangedAt: new Date()
+    };
+    if (status === 'OPEN') updatePayload.lastOpenedAt = new Date();
+    else if (status === 'CLOSED') updatePayload.lastClosedAt = new Date();
+
     const gate = await RailwayGate.findByIdAndUpdate(
       id,
-      { 
-        currentStatus: status,
-        lastStatusChangedAt: new Date()
-      },
+      updatePayload,
       { new: true }
     );
 

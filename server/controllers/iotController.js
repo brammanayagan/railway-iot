@@ -49,6 +49,11 @@ export const processStatusEvent = async (req, res) => {
     // Update Gate Current Status
     gate.currentStatus = status;
     gate.lastStatusChangedAt = new Date(eventTime);
+    if (status === 'OPEN') {
+      gate.lastOpenedAt = new Date(eventTime);
+    } else if (status === 'CLOSED') {
+      gate.lastClosedAt = new Date(eventTime);
+    }
     await gate.save();
 
     // Insert NEW GateEventLog document (Append-only)
